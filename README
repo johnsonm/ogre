@@ -1,0 +1,73 @@
+README
+
+pyogg is an ogg-ripping script inspired by autorip, but designed to
+allow the user the opportunity to enter track information and send the
+info off to freedb for the next user.  I wrote it because I got tired
+of autorip not knowing about my less-well-known discs but was spoiled
+by not having to type very much to rip.
+
+pyogg is unapologetically ogg-specific.  Ogg Vorbis sounds better
+than MP3 and is not subject to nasty patents.  Folks with MP3
+players with no ogg capability should use some other ripping
+script, sorry.
+
+pyogg depends on Ben Gertzfield's excellent cddb-py package; check
+http://sourceforge.net/projects/cddb-py/ for a copy.
+RPM packages of cddb-py are available at
+ftp://people.redhat.com/cddb-py/ and probably elsewere.
+
+pyogg is tested with Python 1.5.2; later versions are likely to
+work but I have not tested them at this point.  Please feel free
+to test it and report results to me.  Bug fixes are also welcome,
+of course.
+
+To configure pyogg, edit the variables near the top of the file:
+  rip_device
+    Chooses the cdrom device to rip from
+  bitrate
+    Selects a target bitrate (ogg files are variable bit rate,
+    this is a target average bitrate).
+  names
+    A dictionary specifying file and directory names.  All file
+    and directory names get substituted with the following
+    variables in context:
+      martist   The artist's name encoded as a legal filename component string
+      mtitle    The album title encoded as a legal filename component string
+      category  The category string, which had better be a legal filename
+    Additionally, encfile has the following variables available
+      mttitle   The track title encoded as a legal filename component string
+      track     An integer track number within an album
+    The dictionary entries are:
+      wavdir
+        Directory pattern in which to store raw data tracks as they
+	are copied from the disk
+      wavcap
+        Eventually will be used to put a rough limit on the amount
+	of disk space used for wav files.  Unused until we are
+	putting multiple discs into the wavdir because of full
+	pipelining
+      encdir
+        Directory pattern into which to encode ogg files.  Not the final
+	location, a temporary directory.
+      encfile
+        Filename pattern of each encoded individual track
+      oggdir
+        Directory pattern for final location of encoded ogg files.
+
+
+This program is free software; you can redistribute it and/or modify
+it under the terms of the GNU General Public License as published by
+the Free Software Foundation; either version 2 of the License, or
+(at your option) any later version.
+
+This program is distributed in the hope that it will be useful,
+but WITHOUT ANY WARRANTY; without even the implied warranty of
+MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+GNU General Public License for more details.
+
+You should have received a copy of the GNU General Public License
+along with this program; if not, write to the Free Software
+Foundation, Inc., 59 Temple Place, Suite 330, Boston, MA  02111-1307  USA
+
+A copy of the GNU General Public License can be found in the
+COPYING file that accompanied this distribution
