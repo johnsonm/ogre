@@ -93,30 +93,18 @@ def escapequote(name):
     """
     return re.sub(r'"', r'\"', name)
 
+def hms(seconds):
+    ret = ""
+    hours = int(seconds / 3600)
+    minutes = int((seconds % 3600) / 60)
+    seconds = seconds % 60
+    if hours:   ret = ret + "%dh" % hours
+    if minutes: ret = ret + "%dm" % minutes
+    if seconds: ret = ret + "%ds" % seconds
+    return ret
 
 
-def waitcd(device=None):
-    """Wait for a CD to be inserted into the drive
-    """
-    r = rotator()
-    first=None
-    waited=0
 
-    cd = DiscID.open(device)
-
-    while not first:
-	try:
-	    (first, last) = cdrom.toc_header(cd)
-	except cdrom.error, e:
-	    if not waited:
-		r.rotate(sys.stdout, "Waiting for next disc:  %s")
-		waited=1
-	    else:
-		r.rotate(sys.stdout, "%s")
-	    time.sleep(0.5)
-    if waited:
-	print "found cd"
-    return cd
 
 def eject(device=None):
     """Eject the CD
@@ -125,6 +113,34 @@ def eject(device=None):
 	os.system("eject %s" % device)
     else:
 	os.system("eject cdrom")
+
+def waitcd(device=None):
+    """Wait for a CD to be inserted into the drive
+    """
+    r = rotator()
+    first=None
+    waited=0
+    if not device:
+	device=rip_device
+
+    cd = DiscID.open(device)
+
+    while not first:
+	try:
+	    (first, last) = cdrom.toc_header(cd)
+	except cdrom.error, e:
+	    if not waited:
+		cd.close()
+		eject(device)
+		cd = DiscID.open(device)
+		r.rotate(sys.stdout, "Waiting for next disc:  %s")
+		waited=1
+	    else:
+		r.rotate(sys.stdout, "%s")
+	    time.sleep(0.5)
+    if waited:
+	print "found cd"
+    return cd
 
 def merge_dicts(dictlist):
     ret = {}
@@ -202,7 +218,7 @@ def submit_disc_info(cddb_checksum, category, tracklist, tracktitles,
 			(submit_address, category, cddb_checksum, filename))
 
 
-def create_disc_info(cd, discId, status):
+def create_disc_info(cd, discId, status, tracktimes):
     """Get data from user, offer to submit data to freedb if status
        indicates a working network connection and database.
        Returns the same 5-tuple as get_disc_info.
@@ -295,7 +311,7 @@ def create_disc_info(cd, discId, status):
 			 track_frames, num_seconds, artist, title, elements,
 			 1, filename)
     os.unlink(filename)
-    return (artist, title, category, tracklist, tracktitles)
+    return (artist, title, category, tracklist, tracktitles, tracktimes)
 
 
 def choose_disc_info(list, status):
@@ -318,13 +334,32 @@ def choose_disc_info(list, status):
 
 def get_disc_info(cd):
     """Get disc info from freedb if possible, otherwise from user
+       Returns artist (string), title (string), category (string),
+       tracklist (int list), tracktitles(string dict, int key),
+       tracktimes (int array)
     """
     discId = DiscID.disc_id(cd)
-    (status, discInfo) = CDDB.query(discId)
+
+    # set up tracktimes
+    num_tracks = discId[1]
+    track_frames = discId[2:-1]
+    num_seconds = discId[-1]
+    tracktimes = ['dummy'] # 1-based trackno where this is used
+    timecount = 0
+    for frameno in range(num_tracks):
+	if frameno < (num_tracks-1):
+	    thistime = (track_frames[frameno+1]-track_frames[frameno])/75
+	    timecount = timecount + thistime
+	    tracktimes.append(thistime)
+	else:
+	    tracktimes.append(num_seconds-timecount)
+
+    (status, discInfo) = CDDB.query(discId, client_name="pyogg",
+				    client_version=pyogg_version)
     if status == 210 or status == 211 or type(discInfo) == type([]):
 	discInfo = choose_disc_info(discInfo, status)
     elif not status == 200:
-	return create_disc_info(cd, discId, status)
+	return create_disc_info(cd, discId, status, tracktimes)
 
     discTitle = re.split(r"\s+/\s+", discInfo['title'], 1)
     artist = discTitle[0]
@@ -333,17 +368,19 @@ def get_disc_info(cd):
     else:
 	title = discTitle[1]
 
-    (status, trackInfo) = CDDB.read(discInfo['category'], discInfo['disc_id'])
+    (status, trackInfo) = CDDB.read(discInfo['category'], discInfo['disc_id'],
+				     client_name="pyogg",
+				     client_version=pyogg_version)
     if status == 417:
 	print "Server: Access limit exceeded"
-	return (None, None, None, None, None)
+	return (None, None, None, None, None, None)
     elif status == 409 or status == 403 or status == 402:
 	print "Server: Server error %d" % status
-	return (None, None, None, None, None)
+	return (None, None, None, None, None, None)
     elif status == 401:
 	print "Server: Specified entry not found"
 	print "That's funny, we found it a second ago!"
-	return (None, None, None, None, None)
+	return (None, None, None, None, None, None)
 
     tt = re.compile(r"TTITLE(?P<track>[0-9]+)")
     tracktitles = {}
@@ -353,14 +390,15 @@ def get_disc_info(cd):
 	    tracktitles[int(track.group('track'))+1] = trackInfo[key]
     tracklist = tracktitles.keys()
     tracklist.sort()
-    return (artist, title, discInfo['category'], tracklist, tracktitles)
+    return (artist, title, discInfo['category'],
+	    tracklist, tracktitles, tracktimes)
 
 
 def do_one_disc():
     """Rip one disk
     """
     cd = waitcd(rip_device)
-    (artist, title, category, tracklist, tracktitles) = get_disc_info(cd)
+    (artist, title, category, tracklist, tracktitles, tracktimes) = get_disc_info(cd)
     cd.close()
     if not artist:
 	print "OK, let's just skip that one then, shall we?"
@@ -385,7 +423,7 @@ def do_one_disc():
     print "Title: %s" % title
     print "Artist: %s" % artist
     for track in tracklist:
-	print "\t%d: %s" % (track, tracktitles[track])
+	print "\t%d: %s (%s)" % (track, tracktitles[track], hms(tracktimes[track]))
 	nameinfos[track] = merge_dicts((names, nameinfo,
 	    {'track'   : track,
 	     'ttitle'  : tracktitles[track],
