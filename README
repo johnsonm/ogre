@@ -21,7 +21,10 @@ work but I have not tested them at this point.  Please feel free
 to test it and report results to me.  Bug fixes are also welcome,
 of course.
 
-To configure pyogg, edit the variables near the top of the file:
+To configure pyogg, edit the variables near the top of the file.
+  interactive
+    interactive=1 says go ahead and ask a few questions when confused
+    interactive=0 says only ask questions when there is no alternative
   rip_device
     Chooses the cdrom device to rip from
   bitrate
@@ -53,6 +56,16 @@ To configure pyogg, edit the variables near the top of the file:
         Filename pattern of each encoded individual track
       oggdir
         Directory pattern for final location of encoded ogg files.
+  submit_address
+    If you are making modifications to the source code, please
+    test them by setting submit_address = "test-submit@freedb.org"
+    until your modifications are proven.  Doing otherwise will
+    invite the wrath of the wonderful volunteers who run the
+    freedb service.
+  pyogg_version
+    If you are making significant modifications to the source code,
+    please change pyogg_version to something like "<n>.<m>-<yourinitials>"
+    so that freedb entries are properly marked.  Thanks!
 
 
 This program is free software; you can redistribute it and/or modify
