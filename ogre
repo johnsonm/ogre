@@ -176,7 +176,7 @@ def enc_one_track(track, nameinfo):
 
     print "Encoding track %d %s" % (track, nameinfo['ttitle'])
     start = time.time()
-    os.system('oggenc -q -b %(bitrate)d -o %(encfile)s -t "%(qttitle)s" -l "%(qtitle)s" -a "%(qartist)s" %(wavname)s 2>/dev/null' % nameinfo)
+    os.system('oggenc -Q -b %(bitrate)d -o %(encfile)s -t "%(qttitle)s" -l "%(qtitle)s" -a "%(qartist)s" %(wavname)s 2>/dev/null' % nameinfo)
     os.unlink(nameinfo['wavname'])
     dur = time.time() - start
     print " Encoded track %d (%s) %s" % (track, hms(dur), nameinfo['ttitle'])
