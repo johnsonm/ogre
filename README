@@ -1,27 +1,27 @@
 README
 
-pyogg is an ogg-ripping script inspired by autorip, but designed to
+ogre is an ogg-ripping script inspired by autorip, but designed to
 allow the user the opportunity to enter track information and send the
 info off to freedb for the next user.  I wrote it because I got tired
 of autorip not knowing about my less-well-known discs but was spoiled
 by not having to type very much to rip.
 
-pyogg is unapologetically ogg-specific.  Ogg Vorbis sounds better
+ogre is unapologetically ogg-specific.  Ogg Vorbis sounds better
 than MP3 and is not subject to nasty patents.  Folks with MP3
 players with no ogg capability should use some other ripping
 script, sorry.
 
-pyogg depends on Ben Gertzfield's excellent cddb-py package; check
+ogre depends on Ben Gertzfield's excellent cddb-py package; check
 http://sourceforge.net/projects/cddb-py/ for a copy.
 RPM packages of cddb-py are available at
 ftp://people.redhat.com/johnsonm/cddb-py/ and probably elsewere.
 
-pyogg is tested with Python 1.5.2; later versions are likely to
+ogre is tested with Python 1.5.2; later versions are likely to
 work but I have not tested them at this point.  Please feel free
 to test it and report results to me.  Bug fixes are also welcome,
 of course.
 
-To configure pyogg, edit the variables near the top of the file.
+To configure ogre, edit the variables near the top of the file.
   interactive
     interactive=1 says go ahead and ask a few questions when confused
     interactive=0 says only ask questions when there is no alternative
@@ -62,9 +62,9 @@ To configure pyogg, edit the variables near the top of the file.
     until your modifications are proven.  Doing otherwise will
     invite the wrath of the wonderful volunteers who run the
     freedb service.
-  pyogg_version
+  ogre_version
     If you are making significant modifications to the source code,
-    please change pyogg_version to something like "<n>.<m>-<yourinitials>"
+    please change ogre_version to something like "<n>.<m>-<yourinitials>"
     so that freedb entries are properly marked.  Thanks!
 
 

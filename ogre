@@ -8,12 +8,12 @@
 # of autorip not knowing about my less-well-known discs but was
 # spoiled by not having to type very much to rip.
 #
-# pyogg is unapologetically ogg-specific.  Ogg Vorbis sounds better
+# ogre is unapologetically ogg-specific.  Ogg Vorbis sounds better
 # than MP3 and is not subject to nasty patents.  Folks with MP3
 # players with no ogg capability should use some other ripping
 # script, sorry.
 #
-# pyogg depends on Ben Gertzfield's excellent cddb-py package; check
+# ogre depends on Ben Gertzfield's excellent cddb-py package; check
 # http://sourceforge.net/projects/cddb-py/ for a copy.
 # RPM packages of cddb-py are available at
 # ftp://people.redhat.com/cddb-py/ and probably elsewere.
@@ -37,7 +37,7 @@
 
 import DiscID, CDDB, cdrom, sys, os, time, re
 
-pyogg_version = "0.3"
+ogre_version = "0.3"
 # do not use the real submit address until this has been well-tested
 #submit_address = "freedb-submit@freedb.org"
 submit_address = "test-submit@freedb.org"
@@ -58,11 +58,11 @@ bitrate=256
 #   track     An integer track number within an album
 names = {
     # put wav files here
-    'wavdir'  : '/tmp/pyogg.wav/',
+    'wavdir'  : '/tmp/ogre.wav/',
     # do not rip extra files if dir this full (not used yet)
     'wavcap'  : 700 * 1024 * 1024,
     # temporarily put .oggs here
-    'encdir'  : '/tmp/pyogg.enc/%(martist)s/%(mtitle)s/',
+    'encdir'  : '/tmp/ogre.enc/%(martist)s/%(mtitle)s/',
     # pattern for file name
     'encfile' : '%(track)02d-%(mttitle)s.ogg',
     # pattern for final dir
@@ -201,7 +201,7 @@ def submit_disc_info(cddb_checksum, category, tracklist, tracktitles,
 	    file.write("#\t%d\n" % track_frames[track-1])
 	file.write("#\n# Disc length: %d seconds\n#\n" % num_seconds)
 	file.write("# Revision: %d\n" % revision)
-	file.write("# Submitted via: pyogg %s\n#\n" % pyogg_version)
+	file.write("# Submitted via: ogre %s\n#\n" % ogre_version)
 	file.write("DISCID=%08x\n" % int(cddb_checksum))
 	file.write("DTITLE=%s / %s\n" % (artist, title))
 	for track in tracklist:
@@ -258,7 +258,7 @@ def create_disc_info(cd, discId, status, tracktimes):
     title = sys.stdin.readline()[:-1]
 
     # Create the template file
-    pipe = os.popen("mktemp /tmp/pyogg.XXXXXX")
+    pipe = os.popen("mktemp /tmp/ogre.XXXXXX")
     filename = pipe.readline()[:-1]
     if not len(filename) or pipe.close():
 	print "mktemp failed to create temporary file"
@@ -389,8 +389,8 @@ def get_disc_info(cd):
 	else:
 	    tracktimes.append(num_seconds-timecount)
 
-    (status, discInfo) = CDDB.query(discId, client_name="pyogg",
-				    client_version=pyogg_version)
+    (status, discInfo) = CDDB.query(discId, client_name="ogre",
+				    client_version=ogre_version)
     if status == 210 or status == 211 or type(discInfo) == type([]):
 	(discInfo, ret) = choose_disc_info(discInfo, cd, discId, status, tracktimes)
 	if ret: return ret
@@ -406,8 +406,8 @@ def get_disc_info(cd):
 	title = discTitle[1]
 
     (status, trackInfo) = CDDB.read(discInfo['category'], discInfo['disc_id'],
-				     client_name="pyogg",
-				     client_version=pyogg_version)
+				     client_name="ogre",
+				     client_version=ogre_version)
     if status == 417:
 	print "Server: Access limit exceeded"
 	return (None, None, None, None, None, None)
