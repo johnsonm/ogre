@@ -35,7 +35,7 @@
 # A copy of the GNU General Public License can be found in the
 # COPYING file that accompanied this distribution
 
-pyogg_version = "0.1"
+pyogg_version = "0.2"
 # do not use the real submit address until this has been well-tested
 #submit_address = "freedb-submit@freedb.org"
 submit_address = "test-submit@freedb.org"
@@ -53,7 +53,7 @@ bitrate=256
 names = {
     # put wav files here
     'wavdir'  : '/tmp/pyogg.wav/',
-    # do not rip extra files if dir this full
+    # do not rip extra files if dir this full (not used yet)
     'wavcap'  : 700 * 1024 * 1024,
     # temporarily put .oggs here
     'encdir'  : '/tmp/pyogg.enc/%(martist)s/%(mtitle)s/',
@@ -89,7 +89,8 @@ def mangle(name):
     return re.sub(r"[^a-zA-Z0-9\-]+", "_", name)
 
 def escapequote(name):
-    """Takes a name, escapes anything necessary for the shell
+    """Takes a name, escapes anything necessary for strings
+       quoted by '"' characters in the shell
     """
     return re.sub(r'"', r'\"', name)
 
@@ -261,7 +262,8 @@ def create_disc_info(cd, discId, status, tracktimes):
     file = open(filename, "w")
     for trackno in range(num_tracks):
 	file.write("TTITLE%d=\n" % trackno)
-	file.write("EXTT%d=\n" % trackno)
+	# Users probably don't care about EXTT
+	#file.write("EXTT%d=\n" % trackno)
     file.write("EXTD=\n")
     file.close()
 
@@ -327,8 +329,9 @@ def choose_disc_info(list, status):
     # FIXME: send in new entries for inexact entries
     # FIXME: maybe choose explicitly?
     # for now just choose the first entry
-    #print "found ", list
-    #print "defaulting to first list entry for now"
+    print "found:",
+    for item in list: print item
+    print "defaulting to first list entry for now"
     return list[0]
 
 
