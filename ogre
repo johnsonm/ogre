@@ -35,13 +35,19 @@
 # A copy of the GNU General Public License can be found in the
 # COPYING file that accompanied this distribution
 
+import DiscID, CDDB, cdrom, sys, os, time, re
+
 pyogg_version = "0.2"
 # do not use the real submit address until this has been well-tested
 #submit_address = "freedb-submit@freedb.org"
 submit_address = "test-submit@freedb.org"
-import DiscID, CDDB, cdrom, sys, os, time, re
 
+# interactive=1 says go ahead and ask a few questions when confused
+# interactive=0 says only ask questions when there is no alternative
+interactive=1
+# choose the device which you will be putting the CDs in
 rip_device="/dev/cdrom"
+# select bitrate from the set: 112, 128, 160, 192, 256, 350
 bitrate=256
 # All filenames get substituted with the following variables in context
 #   martist   The artist's name encoded as a legal filename component string
@@ -258,6 +264,7 @@ def create_disc_info(cd, discId, status, tracktimes):
 	print "mktemp failed to create temporary file"
 	sys.exit(1)
     file = open(filename, "w")
+    file.write("Artist=%s\nAlbumTitle=%s\n" % (artist,title))
     for trackno in range(num_tracks):
 	file.write("TTITLE%d=\n" % trackno)
 	# Users probably don't care about EXTT
@@ -306,6 +313,10 @@ def create_disc_info(cd, discId, status, tracktimes):
 	tracktitles[trackno+1] = elements["TTITLE%d" % trackno]
 	tracklist.append(trackno+1)
 
+    # pick up any changes to artist/title info
+    artist = elements["Artist"]
+    title = elements["AlbumTitle"]
+
     if status == 202:
 	submit_disc_info(cddb_checksum, category, tracklist, tracktitles,
 			 track_frames, num_seconds, artist, title, elements,
@@ -324,13 +335,28 @@ def choose_disc_info(list, status):
     """
     if len(list) == 1:
 	return list[0]
-    # FIXME: send in new entries for inexact entries
-    # FIXME: maybe choose explicitly?
-    # for now just choose the first entry
-    print "found:",
-    for item in list: print item
-    print "defaulting to first list entry for now"
-    return list[0]
+    # FIXME: send in new update entries for inexact matches?
+
+    if interactive: item = 0
+    else: item = 1
+
+    while not item:
+	print "Please choose one of the following entries:"
+	for i in range(len(list)):
+	    print "%2d) %10s: %s" % (i+1, list[i]["category"], list[i]["title"])
+	print "> ",
+	try:
+	    item=int(sys.stdin.readline()[:-1])
+	    if item-1 not in range(len(list)):
+		print "%d not in range, please try again." % item
+		item=0
+	except KeyboardInterrupt:
+	    return None
+	except:
+	    print "Not a legal integer value, please try again."
+	    item=0
+
+    return list[item-1]
 
 
 def get_disc_info(cd):
@@ -359,6 +385,7 @@ def get_disc_info(cd):
 				    client_version=pyogg_version)
     if status == 210 or status == 211 or type(discInfo) == type([]):
 	discInfo = choose_disc_info(discInfo, status)
+	if not discInfo: return (None, None, None, None, None, None)
     elif not status == 200:
 	return create_disc_info(cd, discId, status, tracktimes)
 
