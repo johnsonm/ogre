@@ -325,16 +325,18 @@ def create_disc_info(cd, discId, status, tracktimes):
     return (artist, title, category, tracklist, tracktitles, tracktimes)
 
 
-def choose_disc_info(list, status):
+def choose_disc_info(list, cd, discId, status, tracktimes):
     """Let user choose from database hits.  Unfortunately, freedb
        sometimes returns a status of multiple entries with a list
        of only one entry...
        If status == 211, the match is inexact; offer to send in an
        updated entry with the new discid whatever option is chosen.
-       Returns a dictionary in every case.
+       Returns a tuple
+         The first element is a discInfo dictionary
+	 The second is None or a list returned from create_disc_info
     """
     if len(list) == 1:
-	return list[0]
+	return (list[0], None)
     # FIXME: send in new update entries for inexact matches?
 
     if interactive: item = 0
@@ -344,19 +346,25 @@ def choose_disc_info(list, status):
 	print "Please choose one of the following entries:"
 	for i in range(len(list)):
 	    print "%2d) %10s: %s" % (i+1, list[i]["category"], list[i]["title"])
+	print "98) Urk, please skip this CD"
+	print "99) None of the above, let me enter the data manually"
 	print "> ",
 	try:
 	    item=int(sys.stdin.readline()[:-1])
+	    if item == 98:
+		return (None, None)
+	    if item == 99:
+		return (None, create_disc_info(cd, discId, status, tracktimes))
 	    if item-1 not in range(len(list)):
 		print "%d not in range, please try again." % item
 		item=0
 	except KeyboardInterrupt:
-	    return None
+	    return (None, None)
 	except:
 	    print "Not a legal integer value, please try again."
 	    item=0
 
-    return list[item-1]
+    return (list[item-1], None)
 
 
 def get_disc_info(cd):
@@ -384,7 +392,8 @@ def get_disc_info(cd):
     (status, discInfo) = CDDB.query(discId, client_name="pyogg",
 				    client_version=pyogg_version)
     if status == 210 or status == 211 or type(discInfo) == type([]):
-	discInfo = choose_disc_info(discInfo, status)
+	(discInfo, ret) = choose_disc_info(discInfo, cd, discId, status, tracktimes)
+	if ret: return ret
 	if not discInfo: return (None, None, None, None, None, None)
     elif not status == 200:
 	return create_disc_info(cd, discId, status, tracktimes)
