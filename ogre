@@ -165,15 +165,42 @@ def enc_one_track(track, nameinfo):
 
 
 
-def submit_disc_info(cddb_checksum, category, filename):
+def submit_disc_info(cddb_checksum, category, tracklist, track_frames,
+		     num_seconds, artist, title, elements, revision,
+		     filename):
     """Email a database entry to freedb
     """
     print "Do you wish to submit this info to freedb? (Y/n): ",
     choice = sys.stdin.readline()[:-1]
     if not len(choice) or not choice[0] == "n":
+	# OK, time to write a real database entry
+	file = open(filename, "w")
+	file.write("# xmcd\n#\n# Track frame offsets:\n")
+	for track in tracklist:
+	    file.write("#\t%d\n" % track_frames[track-1])
+	file.write("#\n# Disc length: %d seconds\n#\n" % num_seconds)
+	file.write("# Revision: %d\n" % revision)
+	file.write("# Submitted via: pyogg %s\n#\n" % pyogg_version)
+	file.write("DISCID=%08x\n" % int(cddb_checksum))
+	file.write("DTITLE=%s / %s\n" % (artist, title))
+	for track in tracklist:
+	    file.write("TTITLE%d=%s\n" % (track-1, tracktitles[track]))
+	for line in re.split("\n", elements["EXTD"]):
+	    file.write("EXTD=%s\\n\n" % line)
+	for track in tracklist:
+	    if elements.has_key("EXTT%d" % (track-1)):
+		file.write("EXTT%d=%s\n" % (track-1, elements["EXTT%d" % (track-1)]))
+	    else:
+		file.write("EXTT%d=\n" % (track-1))
+	if elements.has_key("PLAYORDER"):
+	    file.write("PLAYORDER=%s\n" % elements["PLAYORDER"])
+	else:
+	    file.write("PLAYORDER=\n")
+	file.close()
 	print "mailing entry to %s" % submit_address
 	os.system('mail %s -s "cddb %s %s" < %s' %
 			(submit_address, category, cddb_checksum, filename))
+
 
 def create_disc_info(cd, discId, status):
     """Get data from user, offer to submit data to freedb if status
@@ -257,42 +284,16 @@ def create_disc_info(cd, discId, status):
 	    print "Press return to invoke editor, control-C to bail out...",
 	    sys.stdout.flush()
 	    sys.stdin.read()
-
-    print elements
-    # Write the real file
     tracklist = []
     tracktitles = {}
     for trackno in range(num_tracks):
 	tracktitles[trackno+1] = elements["TTITLE%d" % trackno]
 	tracklist.append(trackno+1)
-    file = open(filename, "w")
-    file.write("# xmcd\n#\n# Track frame offsets:\n")
-    print track_frames
-    for track in tracklist:
-	print track
-	file.write("#\t%d\n" % track_frames[track-1])
-    file.write("#\n# Disc length: %d seconds\n#\n" % num_seconds)
-    file.write("# Revision: 1\n") # FIXME when we can send in updates
-    file.write("# Submitted via: pyogg %s\n#\n" % pyogg_version)
-    file.write("DISCID=%08x\n" % int(cddb_checksum))
-    file.write("DTITLE=%s / %s\n" % (artist, title))
-    for track in tracklist:
-	file.write("TTITLE%d=%s\n" % (track-1, tracktitles[track]))
-    for line in re.split("\n", elements["EXTD"]):
-	file.write("EXTD=%s\n" % line)
-    for track in tracklist:
-	if elements.has_key("EXTT%d" % (track-1)):
-	    file.write("EXTT%d=%s\n" % (track-1, elements["EXTT%d" % (track-1)]))
-	else:
-	    file.write("EXTT%d=\n")
-    if elements.has_key("PLAYORDER"):
-	file.write("PLAYORDER=%s\n" % elements["PLAYORDER"])
-    else:
-	file.write("PLAYORDER=\n")
-    file.close()
 
     if status == 202:
-	submit_disc_info(cddb_checksum, category, filename)
+	submit_disc_info(cddb_checksum, category, tracklist, track_frames,
+			 num_seconds, artist, title, elements, 1, filename)
+    os.unlink(filename)
     return (artist, title, category, tracklist, tracktitles)
 
 
