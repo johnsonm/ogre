@@ -21,6 +21,9 @@ work but I have not tested them at this point.  Please feel free
 to test it and report results to me.  Bug fixes are also welcome,
 of course.
 
+ogre requires RC2 oggenc, earlier versions will not work because
+of command line option clashes.
+
 To configure ogre, edit the variables near the top of the file.
   interactive
     interactive=1 says go ahead and ask a few questions when confused

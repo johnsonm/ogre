@@ -37,7 +37,7 @@
 
 import DiscID, CDDB, cdrom, sys, os, time, re
 
-ogre_version = "0.3"
+ogre_version = "0.4"
 # do not use the real submit address until this has been well-tested
 #submit_address = "freedb-submit@freedb.org"
 submit_address = "test-submit@freedb.org"
