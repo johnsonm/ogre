@@ -170,6 +170,7 @@ def submit_disc_info(cddb_checksum, category, filename):
     print "Do you wish to submit this info to freedb? (Y/n): ",
     choice = sys.stdin.readline()[:-1]
     if not len(choice) or not choice[0] == "n":
+	print "mailing entry to %s" % submit_address
 	os.system('mail %s -s "cddb %s %s" < %s' %
 			(submit_address, category, cddb_checksum, filename))
 
@@ -290,7 +291,7 @@ def create_disc_info(cd, discId, status):
     file.close()
 
     if status == 202:
-	submit_disc_info(cddb_checksum, category, filename)
+	submit_disc_info(cddb_checksum, categories[category], filename)
     return (artist, title, category, tracklist, tracktitles)
 
 
@@ -304,7 +305,9 @@ def choose_disc_info(list, status):
     """
     if len(list) == 1:
 	return list[0]
-    # FIXME: for now just choose the first entry
+    # FIXME: send in new entries for inexact entries
+    # FIXME: maybe choose explicitly?
+    # for now just choose the first entry
     #print "found ", list
     #print "defaulting to first list entry for now"
     return list[0]
@@ -314,9 +317,7 @@ def get_disc_info(cd):
     """Get disc info from freedb if possible, otherwise from user
     """
     discId = DiscID.disc_id(cd)
-    #print discId
     (status, discInfo) = CDDB.query(discId)
-    #print "status = ", status
     if status == 210 or status == 211 or type(discInfo) == type([]):
 	discInfo = choose_disc_info(discInfo, status)
     elif not status == 200:
@@ -341,8 +342,6 @@ def get_disc_info(cd):
 	print "That's funny, we found it a second ago!"
 	return (None, None, None, None, None)
 
-    #print trackInfo
-    #sys.exit(0)
     tt = re.compile(r"TTITLE(?P<track>[0-9]+)")
     tracktitles = {}
     for key in trackInfo.keys():
