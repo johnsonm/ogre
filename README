@@ -13,8 +13,6 @@ script, sorry.
 
 ogre depends on Ben Gertzfield's excellent cddb-py package; check
 http://sourceforge.net/projects/cddb-py/ for a copy.
-RPM packages of cddb-py are available at
-ftp://people.redhat.com/johnsonm/cddb-py/ and probably elsewere.
 
 ogre is tested with Python 1.5.2; later versions are likely to
 work but I have not tested them at this point.  Please feel free

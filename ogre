@@ -1,6 +1,6 @@
 #!/usr/bin/env python
 #
-# Copyright 2001 Michael K. Johnson <johnsonm@redhat.com>
+# Copyright 2001, 2004 Michael K. Johnson <a1237@danlj.org>
 #
 # Ogg-ripping script inspired by autorip, but designed to allow the
 # user the opportunity to enter track information and send the info
@@ -15,8 +15,6 @@
 #
 # ogre depends on Ben Gertzfield's excellent cddb-py package; check
 # http://sourceforge.net/projects/cddb-py/ for a copy.
-# RPM packages of cddb-py are available at
-# ftp://people.redhat.com/cddb-py/ and probably elsewere.
 #
 # This program is free software; you can redistribute it and/or modify
 # it under the terms of the GNU General Public License as published by
@@ -37,7 +35,7 @@
 
 import DiscID, CDDB, cdrom, sys, os, time, re
 
-ogre_version = "0.4"
+ogre_version = "0.5"
 # do not use the real submit address until this has been well-tested
 #submit_address = "freedb-submit@freedb.org"
 submit_address = "test-submit@freedb.org"
@@ -66,7 +64,7 @@ names = {
     # pattern for file name
     'encfile' : '%(track)02d-%(mttitle)s.ogg',
     # pattern for final dir
-    'oggdir'  : '/mnt/ogg/%(category)s/%(martist)s/%(mtitle)s/',
+    'oggdir'  : '/data/ogg/%(category)s/%(martist)s/%(mtitle)s/',
 }
 
 class rotator:
