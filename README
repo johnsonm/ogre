@@ -14,13 +14,10 @@ script, sorry.
 ogre depends on Ben Gertzfield's excellent cddb-py package; check
 http://sourceforge.net/projects/cddb-py/ for a copy.
 
-ogre is tested with Python 1.5.2; later versions are likely to
+ogre is tested with Python 2.2; later versions are likely to
 work but I have not tested them at this point.  Please feel free
 to test it and report results to me.  Bug fixes are also welcome,
 of course.
-
-ogre requires RC2 oggenc, earlier versions will not work because
-of command line option clashes.
 
 To configure ogre, edit the variables near the top of the file.
   interactive
