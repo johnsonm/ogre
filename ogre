@@ -201,7 +201,7 @@ def create_disc_info(cd, discId, status):
 	except:
 	    print "Could not understand category choice, please try again."
 	    category=0
-    category=category-1
+    category=categories[category-1]
 
     print "Artist: ",
     artist = sys.stdin.readline()[:-1]
@@ -291,7 +291,7 @@ def create_disc_info(cd, discId, status):
     file.close()
 
     if status == 202:
-	submit_disc_info(cddb_checksum, categories[category], filename)
+	submit_disc_info(cddb_checksum, category, filename)
     return (artist, title, category, tracklist, tracktitles)
 
 
