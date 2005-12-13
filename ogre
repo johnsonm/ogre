@@ -114,6 +114,8 @@ def hms(seconds):
 def eject(device=None):
     """Eject the CD
     """
+    # some devices seem to need time to settle
+    time.sleep(2)
     if device:
 	os.system("eject %s" % device)
     else:
@@ -274,7 +276,7 @@ def create_disc_info(cd, discId, status, tracktimes):
     while not done:
 
 	# Allow the user to fill in the template file
-	os.system('[ -z $EDITOR ] && EDITOR=vi; $EDITOR %s' % filename)
+	os.system('[ -z "$EDITOR" ] && EDITOR=vi; $EDITOR %s' % filename)
 
 	# Parse the template file, checking freedb requirements
 	done = 1
