@@ -71,16 +71,15 @@ class rotator:
     """Very simple text rotator class
     """
     def __init__ (self):
-	self.rotator = "/"
+	self.rotator = '/'
+        self.nextRotator = {
+            '/': '-',
+            '-': '\\',
+            '\\': '|',
+            '|': '/',
+        }
     def next (self):
-	if self.rotator == "/":
-	    self.rotator = "-"
-	elif self.rotator == "-":
-	    self.rotator = "\\"
-	elif self.rotator == "\\":
-	    self.rotator = "|"
-	elif self.rotator == "|":
-	    self.rotator = "/"
+        self.rotator = self.nextRotator[self.rotator]
 	return self.rotator
     def rotate(self, file, fmt):
 	file.write(fmt % "" + self.next())
@@ -114,8 +113,6 @@ def hms(seconds):
 def eject(device=None):
     """Eject the CD
     """
-    # some devices seem to need time to settle
-    time.sleep(2)
     if device:
 	os.system("eject %s" % device)
     else:
@@ -478,7 +475,7 @@ def do_one_disc():
     ripping = 0
     encoding = 0
 
-    while rip_pending or enc_pending:
+    while rip_pending or enc_pending or ripping or encoding:
 	if rip_pending and not ripping:
 	    rip = rip_pending.pop(0)
 	    rip_pid = rip_one_track(rip, nameinfos[rip])
@@ -491,8 +488,10 @@ def do_one_disc():
 	if finished == rip_pid:
 	    enc_pending.append(rip)
 	    ripping = 0
-	    if not rip_pending:
-		eject(rip_device)
+            if not rip_pending:
+                # give user a chance to insert disc while last track
+                # is encoded
+                eject(rip_device)
 	elif finished == enc_pid:
 	    encoding = 0
 
