@@ -68,6 +68,13 @@ names = {
     'oggdir'  : '%(home)s/Music/%(category)s/%(martist)s/%(mtitle)s/',
 }
 
+if rip_device:
+    names['device'] = "-d %s" % rip_device
+else:
+    names['device'] = ""
+names['bitrate'] = bitrate
+
+
 # this is how we get data down to the encoder process
 readCommand, writeCommand = os.pipe()
 
@@ -175,13 +182,13 @@ def enc_one_track(track, nameinfo):
 
 def dispatch_enc_one_track(track, nameinfo):
     os.write(writeCommand,
-        '\0'.join(('enctrack',
-                   cPickle.dumps((track, nameinfo)))))
+        '\t'.join(('enctrack',
+                   cPickle.dumps((track, nameinfo)))) + '\0')
 
 def dispatch_diskend(encdir, oggdir):
     os.write(writeCommand,
-        '\0'.join(('diskend',
-                   cPickle.dumps((encdir, oggdir)))))
+        '\t'.join(('diskend',
+                   cPickle.dumps((encdir, oggdir)))) + '\0')
 
     
 
@@ -509,30 +516,27 @@ def do_one_disc():
 
 
 
-if rip_device:
-    names['device'] = "-d %s" % rip_device
-else:
-    names['device'] = ""
-names['bitrate'] = bitrate
-
 pid = os.fork()
 if not pid:
+    buffer = ''
     while True:
-        # cheap, cheap, do it the trivial way
-        command = os.read(readCommand, 40960)
-        command, data = command.split('\0')
-        if command == 'enctrack':
-            track, nameinfo = cPickle.loads(data)
-            enc_one_track(track, nameinfo)
-        if command == 'diskend':
-            encdir, oggdir = cPickle.loads(data)
-            try:
-                os.makedirs(oggdir)
-            except OSError:
-                pass
-            os.system("mv %s/* %s" % (encdir, oggdir))
-        if command == 'exit':
-            sys.exit(0)
+        # Assume that we get whole pickled data in one read -- normally true
+        buffer += os.read(readCommand, 1024*1024)
+        commands = command.split('\0')
+        for command in comands:
+            commandName, data = command.split('\t', 1)
+            if commandName == 'enctrack':
+                track, nameinfo = cPickle.loads(data)
+                enc_one_track(track, nameinfo)
+            if commandName == 'diskend':
+                encdir, oggdir = cPickle.loads(data)
+                if not os.path.exists(oggdir):
+                    os.makedirs(oggdir)
+                for pathname in sorted(os.listdir(encdir)):
+                    os.renames('%s/%s' %(encdir, pathname),
+                               '%s/%s' %(oggdir, pathname))
+            if commandName == 'exit':
+                sys.exit(0)
 
 try:
     finished = 0
@@ -541,7 +545,7 @@ try:
         (finished, status) = os.waitpid(pid, os.WNOHANG)
 finally:
     if not finished:
-        os.write(writeCommand, 'exit\0')
+        os.write(writeCommand, 'exit\t\0')
         print '\nWaiting for encoding to finish...'
         (finished, status) = os.waitpid(pid)
     sys.exit(status)
