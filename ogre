@@ -35,14 +35,15 @@
 
 import DiscID, CDDB, cdrom, sys, os, time, re, cPickle, tempfile
 
-ogre_version = "0.5"
+ogre_version = "0.6"
 # do not use the real submit address until this has been well-tested
 #submit_address = "freedb-submit@freedb.org"
 submit_address = "test-submit@freedb.org"
 
-# interactive=1 says go ahead and ask a few questions when confused
 # interactive=0 says only ask questions when there is no alternative
-interactive=1
+# interactive=1 says go ahead and ask a few questions when confused
+# interactive=2 says ask about info for each disk
+interactive=2
 # choose the device which you will be putting the CDs in
 rip_device="/dev/cdrom"
 # select bitrate from the set: 112, 128, 160, 192, 256, 350
@@ -66,6 +67,8 @@ names = {
     'encfile' : '%(track)02d-%(mttitle)s.ogg',
     # pattern for final dir
     'oggdir'  : '%(home)s/Music/%(category)s/%(martist)s/%(mtitle)s/',
+    # pattern for freedb info files
+    'info'    : '%(home)s/Music/%(category)s_%(martist)s_%(mtitle)s.info',
 }
 
 if rip_device:
@@ -193,74 +196,110 @@ def dispatch_diskend(encdir, oggdir):
     
 
 
+def format_disc_info(cddb_checksum, category, tracklist, tracktitles,
+		     track_frames, num_seconds, artist, title, elements,
+		     revision, filename):
+    "Format a database entry in freedb form"
+    f = open(filename, "w")
+    f.write("# xmcd\n#\n# Track frame offsets:\n")
+    for track in tracklist:
+        f.write("#\t%d\n" % track_frames[track-1])
+    f.write("#\n# Disc length: %d seconds\n#\n" % num_seconds)
+    f.write("# Revision: %d\n" % revision)
+    f.write("# Submitted via: ogre %s\n#\n" % ogre_version)
+    f.write("DISCID=%08x\n" % int(cddb_checksum))
+    f.write("DTITLE=%s / %s\n" % (artist, title))
+    for track in tracklist:
+        f.write("TTITLE%d=%s\n" % (track-1, tracktitles[track]))
+    for line in re.split("\n", elements["EXTD"]):
+        f.write("EXTD=%s\n" % line)
+    for track in tracklist:
+        if elements.has_key("EXTT%d" % (track-1)):
+	    f.write("EXTT%d=%s\n" % (track-1, elements["EXTT%d" % (track-1)]))
+        else:
+	    f.write("EXTT%d=\n" % (track-1))
+    if elements.has_key("PLAYORDER"):
+        f.write("PLAYORDER=%s\n" % elements["PLAYORDER"])
+    else:
+        f.write("PLAYORDER=\n")
+    f.close()
+
+
 
 def submit_disc_info(cddb_checksum, category, tracklist, tracktitles,
 		     track_frames, num_seconds, artist, title, elements,
 		     revision, filename):
-    """Email a database entry to freedb
-    """
+    "Email a database entry to freedb"
     print "Do you wish to submit this info to freedb? (Y/n): ",
     choice = sys.stdin.readline()[:-1]
     if not len(choice) or not choice[0] == "n":
-	# OK, time to write a real database entry
-	f = open(filename, "w")
-	f.write("# xmcd\n#\n# Track frame offsets:\n")
-	for track in tracklist:
-	    f.write("#\t%d\n" % track_frames[track-1])
-	f.write("#\n# Disc length: %d seconds\n#\n" % num_seconds)
-	f.write("# Revision: %d\n" % revision)
-	f.write("# Submitted via: ogre %s\n#\n" % ogre_version)
-	f.write("DISCID=%08x\n" % int(cddb_checksum))
-	f.write("DTITLE=%s / %s\n" % (artist, title))
-	for track in tracklist:
-	    f.write("TTITLE%d=%s\n" % (track-1, tracktitles[track]))
-	for line in re.split("\n", elements["EXTD"]):
-	    f.write("EXTD=%s\n" % line)
-    
-
-
-
-def submit_disc_info(cddb_checksum, category, tracklist, tracktitles,
-		     track_frames, num_seconds, artist, title, elements,
-		     revision, filename):
-    """Email a database entry to freedb
-    """
-    print "Do you wish to submit this info to freedb? (Y/n): ",
-    choice = sys.stdin.readline()[:-1]
-    if not len(choice) or not choice[0] == "n":
-	# OK, time to write a real database entry
-	f = open(filename, "w")
-	f.write("# xmcd\n#\n# Track frame offsets:\n")
-	for track in tracklist:
-	    f.write("#\t%d\n" % track_frames[track-1])
-	f.write("#\n# Disc length: %d seconds\n#\n" % num_seconds)
-	f.write("# Revision: %d\n" % revision)
-	f.write("# Submitted via: ogre %s\n#\n" % ogre_version)
-	f.write("DISCID=%08x\n" % int(cddb_checksum))
-	f.write("DTITLE=%s / %s\n" % (artist, title))
-	for track in tracklist:
-	    f.write("TTITLE%d=%s\n" % (track-1, tracktitles[track]))
-	for line in re.split("\n", elements["EXTD"]):
-	    f.write("EXTD=%s\n" % line)
-	for track in tracklist:
-	    if elements.has_key("EXTT%d" % (track-1)):
-		f.write("EXTT%d=%s\n" % (track-1, elements["EXTT%d" % (track-1)]))
-	    else:
-		f.write("EXTT%d=\n" % (track-1))
-	if elements.has_key("PLAYORDER"):
-	    f.write("PLAYORDER=%s\n" % elements["PLAYORDER"])
-	else:
-	    f.write("PLAYORDER=\n")
-	f.close()
+        format_disc_info(cddb_checksum, category, tracklist, tracktitles,
+                         track_frames, num_seconds, artist, title, elements,
+                         revision, filename)
 	print "mailing entry to %s" % submit_address
 	os.system('mail %s -s "cddb %s %s" < %s' %
 			(submit_address, category, cddb_checksum, filename))
 
 
+def create_template_file(artist, title, num_tracks, extd=None, filename=None):
+    "Create the template file"
+    if filename is None:
+        fd, filename = tempfile.mkstemp(prefix='ogre.')
+        f = os.fdopen(fd, "w")
+    else:
+        f = file(filename, "w")
+
+    f.write("Artist=%s\nAlbumTitle=%s\n" % (artist,title))
+    for trackno in range(num_tracks):
+        f.write("TTITLE%d=\n" % trackno)
+        # Users probably don't care about EXTT
+        #f.write("EXTT%d=\n" % trackno)
+    if extd:
+        for line in re.split("\n", extd):
+            f.write("EXTD=%s\n" % line)
+    else:
+        f.write("EXTD=\n")
+    f.close()
+
+    return filename
+
+def parse_template_file(filename, num_tracks):
+    'Parse the template file, checking freedb requirements'
+    lines = [x.strip() for x in file(filename, "r").readlines()]
+    elements = {}
+    for line in lines:
+        try:
+	    (var, val) = line.split('=', 1)
+        except ValueError:
+	    var = line[:-2]
+        if elements.has_key(var):
+	    # can be more than one EXTD
+	    elements[var]=elements[var]+"\n"+val
+        else:
+	    elements[var]=val
+    for trackno in range(num_tracks):
+        var = "TTITLE%d" % trackno
+        dataMissing = False
+        if not elements.has_key(var) or not elements[var]:
+	    print "%s missing, please fix" % var
+	    if not elements.has_key(var):
+	        f = open(filename, "a")
+	        lines = f.write("%s=\n" % var)
+	        f.close()
+            dataMissing = True
+
+    if dataMissing:
+        return None
+
+    return elements
+
+
+
 def create_disc_info(cd, discId, status, tracktimes):
-    """Get data from user, offer to submit data to freedb if status
-       indicates a working network connection and database.
-       Returns the same 5-tuple as get_disc_info.
+    """
+    Get data from user, offer to submit data to freedb if status
+    indicates a working network connection and database.
+    Returns the same 5-tuple as get_disc_info.
     """
     cddb_checksum = discId[0]
     num_tracks = discId[1]
@@ -291,50 +330,19 @@ def create_disc_info(cd, discId, status, tracktimes):
     print "Album title: ",
     title = sys.stdin.readline()[:-1]
 
-    # Create the template file
-    fd, filename = tempfile.mkstemp(prefix='ogre.')
-    f = os.fdopen(fd, "w")
-    f.write("Artist=%s\nAlbumTitle=%s\n" % (artist,title))
-    for trackno in range(num_tracks):
-	f.write("TTITLE%d=\n" % trackno)
-	# Users probably don't care about EXTT
-	#f.write("EXTT%d=\n" % trackno)
-    f.write("EXTD=\n")
-    f.close()
+    filename = create_template_file(artist, title, num_tracks)
 
-    done = 0
-    while not done:
-
+    elements = None
+    while elements is None:
 	# Allow the user to fill in the template file
 	os.system('[ -z "$EDITOR" ] && EDITOR=vi; $EDITOR %s' % filename)
 
-	# Parse the template file, checking freedb requirements
-	done = 1
-	lines = [x.strip() for x in file(filename, "r").readlines()]
-	elements = {}
-	for line in lines:
-	    try:
-		(var, val) = re.split(r"=", line, 1)
-	    except ValueError:
-		var = line[:-2]
-	    if elements.has_key(var):
-		# can be more than one EXTD
-		elements[var]=elements[var]+"\n"+val
-	    else:
-		elements[var]=val
-	for trackno in range(num_tracks):
-	    var = "TTITLE%d" % trackno
-	    if not elements.has_key(var) or not elements[var]:
-		done = 0
-		print "%s missing, please fix" % var
-		if not elements.has_key(var):
-		    f = open(filename, "a")
-		    lines = f.write("%s=\n" % var)
-		    f.close()
-	if not done:
+        elements = parse_template_file(filename, num_tracks)
+	if elements is None:
 	    print "Press return to invoke editor, control-C to bail out...",
 	    sys.stdout.flush()
 	    sys.stdin.read()
+
     tracklist = []
     tracktitles = {}
     for trackno in range(num_tracks):
@@ -470,6 +478,9 @@ def do_one_disc():
 	eject(rip_device)
 	return
 
+    #if interactive >= 2:
+    #    create_template_file(artist, title, 
+
     nameinfo = {'artist':artist,
 		'martist':mangle(artist),
 		'qartist':escapequote(artist),
@@ -484,11 +495,16 @@ def do_one_disc():
     wavdir = names['wavdir'] % nameinfo
     encdir = names['encdir'] % nameinfo
     oggdir = names['oggdir'] % nameinfo
-    try:
+    if not os.path.exists(wavdir):
         os.makedirs(wavdir)
+    if not os.path.exists(encdir):
         os.makedirs(encdir)
-    except OSError:
-        pass
+
+    #if names['info']:
+    #    infofile = names['info'] % nameinfo
+    #    if not os.path.exists(os.path.basename(infofile)):
+    #        os.makedirs(os.path.basename(infofile))
+    #    create_template_file(artist, title, len(tracklist), filename=infofile)
 
     print "Title: %s" % title
     print "Artist: %s" % artist
@@ -520,10 +536,10 @@ pid = os.fork()
 if not pid:
     buffer = ''
     while True:
-        # Assume that we get whole pickled data in one read -- normally true
-        buffer += os.read(readCommand, 1024*1024)
-        commands = command.split('\0')
-        for command in comands:
+        buffer += os.read(readCommand, 64*1024)
+        commands = buffer.split('\0')
+        buffer = commands.pop()
+        for command in commands:
             commandName, data = command.split('\t', 1)
             if commandName == 'enctrack':
                 track, nameinfo = cPickle.loads(data)
