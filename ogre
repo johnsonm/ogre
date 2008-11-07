@@ -534,25 +534,29 @@ def do_one_disc():
 
 pid = os.fork()
 if not pid:
-    buffer = ''
-    while True:
-        buffer += os.read(readCommand, 64*1024)
-        commands = buffer.split('\0')
-        buffer = commands.pop()
-        for command in commands:
-            commandName, data = command.split('\t', 1)
-            if commandName == 'enctrack':
-                track, nameinfo = cPickle.loads(data)
-                enc_one_track(track, nameinfo)
-            if commandName == 'diskend':
-                encdir, oggdir = cPickle.loads(data)
-                if not os.path.exists(oggdir):
-                    os.makedirs(oggdir)
-                for pathname in sorted(os.listdir(encdir)):
-                    os.renames('%s/%s' %(encdir, pathname),
-                               '%s/%s' %(oggdir, pathname))
-            if commandName == 'exit':
-                sys.exit(0)
+    try:
+        buffer = ''
+        while True:
+            buffer += os.read(readCommand, 64*1024)
+            commands = buffer.split('\0')
+            buffer = commands.pop()
+            for command in commands:
+                commandName, data = command.split('\t', 1)
+                if commandName == 'enctrack':
+                    track, nameinfo = cPickle.loads(data)
+                    enc_one_track(track, nameinfo)
+                if commandName == 'diskend':
+                    encdir, oggdir = cPickle.loads(data)
+                    if not os.path.exists(oggdir):
+                        os.makedirs(oggdir)
+                    for pathname in sorted(os.listdir(encdir)):
+                        os.renames('%s/%s' %(encdir, pathname),
+                                   '%s/%s' %(oggdir, pathname))
+                if commandName == 'exit':
+                    sys.exit(0)
+    except KeyboardInterrupt:
+        sys.exit(0)
+
 
 try:
     finished = 0
@@ -563,5 +567,5 @@ finally:
     if not finished:
         os.write(writeCommand, 'exit\t\0')
         print '\nWaiting for encoding to finish...'
-        (finished, status) = os.waitpid(pid)
+        (finished, status) = os.waitpid(pid, 0)
     sys.exit(status)
