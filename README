@@ -14,15 +14,16 @@ script, sorry.
 ogre depends on Ben Gertzfield's excellent cddb-py package; check
 http://sourceforge.net/projects/cddb-py/ for a copy.
 
-ogre is tested with Python 2.2; later versions are likely to
+ogre is tested with Python 2.4; later versions are likely to
 work but I have not tested them at this point.  Please feel free
 to test it and report results to me.  Bug fixes are also welcome,
 of course.
 
 To configure ogre, edit the variables near the top of the file.
   interactive
-    interactive=1 says go ahead and ask a few questions when confused
     interactive=0 says only ask questions when there is no alternative
+    interactive=1 says go ahead and ask a few questions when confused
+    interactive=2 says to edit data for each disc
   rip_device
     Chooses the cdrom device to rip from
   bitrate
@@ -54,6 +55,10 @@ To configure ogre, edit the variables near the top of the file.
         Filename pattern of each encoded individual track
       oggdir
         Directory pattern for final location of encoded ogg files.
+      home
+        User's home directory
+      info
+        Full path to file to which to write data files as sent to freedb
   submit_address
     If you are making modifications to the source code, please
     test them by setting submit_address = "test-submit@freedb.org"
