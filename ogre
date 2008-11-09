@@ -99,13 +99,23 @@ class rotator:
 	f.flush()
 
 
+def make_utf8(name):
+    try:
+        return name.decode('iso-8859-1').encode('utf-8')
+    except UnicodeDecodeError:
+        try:
+            name.decode('utf-8')
+            return name
+        except UnicodeDecodeError:
+            return name
+
 def mangle(name):
     "Takes a name, returns a legal (and nice...) filename"
-    return name.replace(' ', '_').replace('/', '-').encode('utf-8')
+    return make_utf8(name.replace(' ', '_').replace('/', '-'))
 
 def escapequote(name):
     "escape double quotes"
-    return name.replace('"', r'\"').encode('utf-8')
+    return make_utf8(name.replace('"', r'\"'))
 
 def hms(seconds):
     ret = ""
@@ -510,12 +520,12 @@ def do_one_disc():
         create_template_file(artist, title, len(tracktitles), filename=infofile,
                              tracktitles=tracktitles)
 
-    print "Title: %s" % title
-    print "Artist: %s" % artist
+    print "Title: %s" % make_utf8(title)
+    print "Artist: %s" % make_utf8(artist)
     for track in range(len(tracktitles)):
 	print "\t%d: %s (%s)" % (track+1, tracktitles[track], hms(tracktimes[track]))
 	nameinfos[track] = merge_dicts((names, nameinfo,
-	    {'track'   : track,
+	    {'track'   : track+1,
 	     'ttitle'  : tracktitles[track],
 	     'mttitle' : mangle(tracktitles[track]),
 	     'qttitle' : escapequote(tracktitles[track]),
