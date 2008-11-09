@@ -523,7 +523,7 @@ def do_one_disc():
     print "Title: %s" % make_utf8(title)
     print "Artist: %s" % make_utf8(artist)
     for track in range(len(tracktitles)):
-	print "\t%d: %s (%s)" % (track+1, tracktitles[track], hms(tracktimes[track]))
+	print "\t%d: %s (%s)" % (track+1, make_utf8(tracktitles[track]), hms(tracktimes[track]))
 	nameinfos[track] = merge_dicts((names, nameinfo,
 	    {'track'   : track+1,
 	     'ttitle'  : tracktitles[track],
