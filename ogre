@@ -13,7 +13,7 @@
 # players with no ogg capability should use some other ripping
 # script, sorry.
 #
-# ogre depends on Ben Gertzfield's excellent cddb-py package; check
+# ogre depends on Ben Gertzfield's cddb-py package; check
 # http://sourceforge.net/projects/cddb-py/ for a copy.
 #
 # This program is free software; you can redistribute it and/or modify

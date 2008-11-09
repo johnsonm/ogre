@@ -11,7 +11,7 @@ than MP3 and is not subject to nasty patents.  Folks with MP3
 players with no ogg capability should use some other ripping
 script, sorry.
 
-ogre depends on Ben Gertzfield's excellent cddb-py package; check
+ogre depends on Ben Gertzfield's cddb-py package; check
 http://sourceforge.net/projects/cddb-py/ for a copy.
 
 ogre is tested with Python 2.4; later versions are likely to
