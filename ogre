@@ -111,7 +111,14 @@ def make_utf8(name):
 
 def mangle(name):
     "Takes a name, returns a legal (and nice...) filename"
-    return make_utf8(name.replace(' ', '_').replace('/', '-'))
+    # space is a pain for referencing files on the command line
+    # '/' is illegal in unix filenames (path sep)
+    # ':' is illegal in FAT filenames (driver letter separator)
+    # '\' is illegal in FAT filenames (path sep)
+    return make_utf8(name.replace(' ', '_').replace(
+                                  '/', '-').replace(
+                                  ':', '-').replace(
+                                  r'\', '-'))
 
 def escapequote(name):
     "escape double quotes"
