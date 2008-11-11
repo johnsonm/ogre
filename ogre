@@ -118,7 +118,7 @@ def mangle(name):
     return make_utf8(name.replace(' ', '_').replace(
                                   '/', '-').replace(
                                   ':', '-').replace(
-                                  r'\', '-'))
+                                  '\\', '-'))
 
 def escapequote(name):
     "escape double quotes"
