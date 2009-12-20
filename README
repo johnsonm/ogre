@@ -9,7 +9,7 @@ by not having to type very much to rip.
 ogre is unapologetically ogg-specific.  Ogg Vorbis sounds better
 than MP3 and is not subject to nasty patents.  Folks with MP3
 players with no ogg capability should use some other ripping
-script, sorry.
+script, sorry.  It also rips flac, in order to reencode later.
 
 ogre depends on Ben Gertzfield's cddb-py package; check
 http://sourceforge.net/projects/cddb-py/ for a copy.
@@ -55,6 +55,8 @@ To configure ogre, edit the variables near the top of the file.
         Filename pattern of each encoded individual track
       oggdir
         Directory pattern for final location of encoded ogg files.
+      flacdir
+        Directory pattern for final location of encoded flac files.
       home
         User's home directory
       info

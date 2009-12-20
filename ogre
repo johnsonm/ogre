@@ -11,7 +11,7 @@
 # ogre is unapologetically ogg-specific.  Ogg Vorbis sounds better
 # than MP3 and is not subject to nasty patents.  Folks with MP3
 # players with no ogg capability should use some other ripping
-# script, sorry.
+# script, sorry.  It also rips flac.
 #
 # ogre depends on Ben Gertzfield's cddb-py package; check
 # http://sourceforge.net/projects/cddb-py/ for a copy.
@@ -64,11 +64,13 @@ names = {
     # temporarily put .oggs here
     'encdir'  : '%(home)s/ogre.enc/%(martist)s/%(mtitle)s/',
     # pattern for file name
-    'encfile' : '%(track)02d-%(mttitle)s.ogg',
+    'encfile' : '%(track)02d-%(mttitle)s',
     # pattern for final dir
     'oggdir'  : '%(home)s/Music/%(category)s/%(martist)s/%(mtitle)s/',
+    # pattern for final dir
+    'flacdir' : '%(home)s/Music/flac/%(category)s/%(martist)s/%(mtitle)s/',
     # pattern for freedb info files
-    'info'    : '%(home)s/Music/%(category)s_%(martist)s_%(mtitle)s.info',
+    'info'    : '%(home)s/Music/%(category)s/%(martist)s/%(mtitle)s/ogre.info',
 }
 
 if rip_device:
@@ -192,7 +194,12 @@ def rip_one_track(track, nameinfo):
 def enc_one_track(track, nameinfo):
     print "Encoding track %d %s" % (track+1, nameinfo['ttitle'])
     start = time.time()
-    os.system('oggenc -Q -b %(bitrate)d -o "%(encfile)s" -t "%(qttitle)s" -l "%(qtitle)s" -a "%(qartist)s" %(wavname)s 2>/dev/null' % nameinfo)
+    os.system('oggenc -Q -b %(bitrate)d -o "%(encfile)s.ogg"'
+              ' -t "%(qttitle)s" -l "%(qtitle)s" -a "%(qartist)s"'
+              ' %(wavname)s 2>/dev/null' %nameinfo)
+    os.system('flac -s -o "%(encfile)s.flac"'
+              ' -T "PART=%(qttitle)s" -T "TITLE=%(qtitle)s"'
+              ' -T "ARTIST=%(qartist)s" %(wavname)s 2>/dev/null' %nameinfo)
     os.unlink(nameinfo['wavname'])
     dur = time.time() - start
     print " Encoded track %d (%s) %s" % (track+1, hms(dur), nameinfo['ttitle'])
@@ -202,10 +209,10 @@ def dispatch_enc_one_track(track, nameinfo):
         '\t'.join(('enctrack',
                    cPickle.dumps((track, nameinfo)))) + '\0')
 
-def dispatch_diskend(encdir, oggdir):
+def dispatch_diskend(encdir, oggdir, flacdir):
     os.write(writeCommand,
         '\t'.join(('diskend',
-                   cPickle.dumps((encdir, oggdir)))) + '\0')
+                   cPickle.dumps((encdir, oggdir, flacdir)))) + '\0')
 
     
 
@@ -515,6 +522,7 @@ def do_one_disc():
     wavdir = names['wavdir'] % nameinfo
     encdir = names['encdir'] % nameinfo
     oggdir = names['oggdir'] % nameinfo
+    flacdir = names['flacdir'] % nameinfo
     if not os.path.exists(wavdir):
         os.makedirs(wavdir)
     if not os.path.exists(encdir):
@@ -545,7 +553,7 @@ def do_one_disc():
         rip_one_track(track, nameinfos[track])
         dispatch_enc_one_track(track, nameinfos[track])
 
-    dispatch_diskend(encdir, oggdir)
+    dispatch_diskend(encdir, oggdir, flacdir)
     eject(rip_device)
 
 
@@ -567,12 +575,18 @@ if not pid:
                     track, nameinfo = cPickle.loads(data)
                     enc_one_track(track, nameinfo)
                 if commandName == 'diskend':
-                    encdir, oggdir = cPickle.loads(data)
+                    encdir, oggdir, flacdir = cPickle.loads(data)
                     if not os.path.exists(oggdir):
                         os.makedirs(oggdir)
+                    if not os.path.exists(flacdir):
+                        os.makedirs(flacdir)
                     for pathname in sorted(os.listdir(encdir)):
-                        os.renames('%s/%s' %(encdir, pathname),
-                                   '%s/%s' %(oggdir, pathname))
+                        if pathname.endswith('.ogg'):
+                            os.renames('%s/%s' %(encdir, pathname),
+                                       '%s/%s' %(oggdir, pathname))
+                        if pathname.endswith('.flac'):
+                            os.renames('%s/%s' %(encdir, pathname),
+                                       '%s/%s' %(flacdir, pathname))
                 if commandName == 'exit':
                     sys.exit(0)
     except KeyboardInterrupt:
