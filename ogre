@@ -69,8 +69,6 @@ names = {
     'oggdir'  : '%(home)s/Music/%(category)s/%(martist)s/%(mtitle)s/',
     # pattern for final dir
     'flacdir' : '%(home)s/Music/flac/%(category)s/%(martist)s/%(mtitle)s/',
-    # pattern for freedb info files
-    'info'    : '%(home)s/Music/%(category)s/%(martist)s/%(mtitle)s/ogre.info',
 }
 
 if rip_device:
@@ -527,11 +525,13 @@ def do_one_disc():
         os.makedirs(wavdir)
     if not os.path.exists(encdir):
         os.makedirs(encdir)
+    if not os.path.exists(oggdir):
+        os.makedirs(oggdir)
+    if not os.path.exists(flacdir):
+        os.makedirs(flacdir)
 
-    if names['info']:
-        infofile = names['info'] % nameinfo
-        if not os.path.exists(os.path.dirname(infofile)):
-            os.makedirs(os.path.dirname(infofile))
+    for dir in (oggdir, flacdir):
+        infofile = '%s/ogre.info' % dir
         create_template_file(artist, title, len(tracktitles), filename=infofile,
                              tracktitles=tracktitles)
 
