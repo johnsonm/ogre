@@ -33,7 +33,7 @@
 # A copy of the GNU General Public License can be found in the
 # COPYING file that accompanied this distribution
 
-import DiscID, CDDB, cdrom, sys, os, time, re, cPickle, tempfile
+import DiscID, CDDB, cdrom, sys, os, shutil, time, re, cPickle, tempfile
 
 ogre_version = "0.6"
 # do not use the real submit address until this has been well-tested
@@ -66,9 +66,11 @@ names = {
     # pattern for file name
     'encfile' : '%(track)02d-%(mttitle)s',
     # pattern for final dir
-    'oggdir'  : '%(home)s/Music/%(category)s/%(martist)s/%(mtitle)s/',
+    #'oggdir'  : '%(home)s/Music/%(category)s/%(martist)s/%(mtitle)s/',
+    'oggdir'  : '/mnt/nigelmusic/ogg/%(category)s/%(martist)s/%(mtitle)s/',
     # pattern for final dir
-    'flacdir' : '%(home)s/Music/flac/%(category)s/%(martist)s/%(mtitle)s/',
+    #'flacdir' : '%(home)s/Music/flac/%(category)s/%(martist)s/%(mtitle)s/',
+    'flacdir' : '/mnt/nigelmusic/flac/%(category)s/%(martist)s/%(mtitle)s/',
 }
 
 if rip_device:
@@ -582,11 +584,11 @@ if not pid:
                         os.makedirs(flacdir)
                     for pathname in sorted(os.listdir(encdir)):
                         if pathname.endswith('.ogg'):
-                            os.renames('%s/%s' %(encdir, pathname),
-                                       '%s/%s' %(oggdir, pathname))
-                        if pathname.endswith('.flac'):
-                            os.renames('%s/%s' %(encdir, pathname),
-                                       '%s/%s' %(flacdir, pathname))
+                            shutil.move('%s/%s' %(encdir, pathname),
+                                        '%s/%s' %(oggdir, pathname))
+                        elif pathname.endswith('.flac'):
+                            shutil.move('%s/%s' %(encdir, pathname),
+                                        '%s/%s' %(flacdir, pathname))
                 if commandName == 'exit':
                     sys.exit(0)
     except KeyboardInterrupt:
