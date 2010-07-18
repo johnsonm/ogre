@@ -11,7 +11,9 @@
 # ogre is unapologetically ogg-specific.  Ogg Vorbis sounds better
 # than MP3 and is not subject to nasty patents.  Folks with MP3
 # players with no ogg capability should use some other ripping
-# script, sorry.  It also rips flac.
+# script, sorry.  It also rips flac.  Oh, I give up.  Rips mp3 as
+# well, since network streaming client support seems to be too
+# sparse on hardware/software/firmware I have.
 #
 # ogre depends on Ben Gertzfield's cddb-py package; check
 # http://sourceforge.net/projects/cddb-py/ for a copy.
@@ -48,6 +50,7 @@ interactive=2
 rip_device="/dev/cdrom"
 # select bitrate from the set: 112, 128, 160, 192, 256, 350
 bitrate=192
+mp3br=160
 # All filenames get substituted with the following variables in context
 #   martist   The artist's name encoded as a legal filename component string
 #   mtitle    The album title encoded as a legal filename component string
@@ -71,6 +74,9 @@ names = {
     # pattern for final dir
     #'flacdir' : '%(home)s/Music/flac/%(category)s/%(martist)s/%(mtitle)s/',
     'flacdir' : '/mnt/nigelmusic/flac/%(category)s/%(martist)s/%(mtitle)s/',
+    # pattern for final dir
+    #'mp3dir' : '%(home)s/Music/mp3/%(category)s/%(martist)s/%(mtitle)s/',
+    'mp3dir' : '/mnt/nigelmusic/mp3/%(category)s/%(martist)s/%(mtitle)s/',
 }
 
 if rip_device:
@@ -78,6 +84,7 @@ if rip_device:
 else:
     names['device'] = ""
 names['bitrate'] = bitrate
+names['mp3br'] = mp3br
 
 
 # this is how we get data down to the encoder process
@@ -194,12 +201,17 @@ def rip_one_track(track, nameinfo):
 def enc_one_track(track, nameinfo):
     print "Encoding track %d %s" % (track+1, nameinfo['ttitle'])
     start = time.time()
-    os.system('oggenc -Q -b %(bitrate)d -o "%(encfile)s.ogg"'
-              ' -t "%(qttitle)s" -l "%(qtitle)s" -a "%(qartist)s"'
-              ' %(wavname)s 2>/dev/null' %nameinfo)
     os.system('flac -s -o "%(encfile)s.flac"'
               ' -T "PART=%(qttitle)s" -T "TITLE=%(qtitle)s"'
               ' -T "ARTIST=%(qartist)s" %(wavname)s 2>/dev/null' %nameinfo)
+    os.system('oggenc -Q -b %(bitrate)d -o "%(encfile)s.ogg"'
+              ' -t "%(qttitle)s" -l "%(qtitle)s" -a "%(qartist)s"'
+              ' %(wavname)s 2>/dev/null' %nameinfo)
+    os.system('lame -S --abr %(mp3br)d '
+              ' --tt "%(qttitle)s" --tl "%(qtitle)s" --ta "%(qartist)s"'
+              ' %(wavname)s'
+              ' "%(encfile)s.flac"'
+              ' 2>/dev/null' %nameinfo)
     os.unlink(nameinfo['wavname'])
     dur = time.time() - start
     print " Encoded track %d (%s) %s" % (track+1, hms(dur), nameinfo['ttitle'])
@@ -209,10 +221,10 @@ def dispatch_enc_one_track(track, nameinfo):
         '\t'.join(('enctrack',
                    cPickle.dumps((track, nameinfo)))) + '\0')
 
-def dispatch_diskend(encdir, oggdir, flacdir):
+def dispatch_diskend(encdir, oggdir, flacdir, mp3dir):
     os.write(writeCommand,
         '\t'.join(('diskend',
-                   cPickle.dumps((encdir, oggdir, flacdir)))) + '\0')
+                   cPickle.dumps((encdir, oggdir, flacdir, mp3dir)))) + '\0')
 
     
 
@@ -523,6 +535,7 @@ def do_one_disc():
     encdir = names['encdir'] % nameinfo
     oggdir = names['oggdir'] % nameinfo
     flacdir = names['flacdir'] % nameinfo
+    mp3dir = names['mp3dir'] % nameinfo
     if not os.path.exists(wavdir):
         os.makedirs(wavdir)
     if not os.path.exists(encdir):
@@ -531,8 +544,10 @@ def do_one_disc():
         os.makedirs(oggdir)
     if not os.path.exists(flacdir):
         os.makedirs(flacdir)
+    if not os.path.exists(mp3dir):
+        os.makedirs(mp3dir)
 
-    for dir in (oggdir, flacdir):
+    for dir in (oggdir, flacdir, mp3dir):
         infofile = '%s/ogre.info' % dir
         create_template_file(artist, title, len(tracktitles), filename=infofile,
                              tracktitles=tracktitles)
@@ -555,7 +570,7 @@ def do_one_disc():
         rip_one_track(track, nameinfos[track])
         dispatch_enc_one_track(track, nameinfos[track])
 
-    dispatch_diskend(encdir, oggdir, flacdir)
+    dispatch_diskend(encdir, oggdir, flacdir, mp3dir)
     eject(rip_device)
 
 
@@ -577,11 +592,13 @@ if not pid:
                     track, nameinfo = cPickle.loads(data)
                     enc_one_track(track, nameinfo)
                 if commandName == 'diskend':
-                    encdir, oggdir, flacdir = cPickle.loads(data)
+                    encdir, oggdir, flacdir, mp3dir = cPickle.loads(data)
                     if not os.path.exists(oggdir):
                         os.makedirs(oggdir)
                     if not os.path.exists(flacdir):
                         os.makedirs(flacdir)
+                    if not os.path.exists(mp3dir):
+                        os.makedirs(mp3dir)
                     for pathname in sorted(os.listdir(encdir)):
                         if pathname.endswith('.ogg'):
                             shutil.move('%s/%s' %(encdir, pathname),
@@ -589,6 +606,9 @@ if not pid:
                         elif pathname.endswith('.flac'):
                             shutil.move('%s/%s' %(encdir, pathname),
                                         '%s/%s' %(flacdir, pathname))
+                        elif pathname.endswith('.mp3'):
+                            shutil.move('%s/%s' %(encdir, pathname),
+                                        '%s/%s' %(mp3dir, pathname))
                 if commandName == 'exit':
                     sys.exit(0)
     except KeyboardInterrupt:
