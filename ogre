@@ -210,7 +210,7 @@ def enc_one_track(track, nameinfo):
     os.system('lame -S --abr %(mp3br)d '
               ' --tt "%(qttitle)s" --tl "%(qtitle)s" --ta "%(qartist)s"'
               ' %(wavname)s'
-              ' "%(encfile)s.flac"'
+              ' "%(encfile)s.mp3"'
               ' 2>/dev/null' %nameinfo)
     os.unlink(nameinfo['wavname'])
     dur = time.time() - start
