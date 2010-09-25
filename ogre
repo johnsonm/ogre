@@ -353,6 +353,42 @@ def edit_template_file(filename, num_tracks):
     title = elements["AlbumTitle"]
     return (elements, tracktitles, artist, title)
 
+def choose_category(default=None):
+    """
+    Get the category, with an optional default.
+    """
+    categories = ['blues', 'classical', 'country', 'data',
+		  'folk', 'jazz', 'misc', 'newage',
+		  'reggae', 'rock', 'soundtrack',]
+    
+    if default and not interactive:
+        return default
+
+    category=0
+    while not category:
+        if default:
+            print "Please choose category, or press return to take default:"
+        else:
+            print "Please choose category:"
+	for i in range(len(categories)):
+	    print "%2d) %-10s  " % (i+1, categories[i]),
+	    if not (i+1) % 4: print
+	if (i+1) % 4: print
+        if default:
+            print "(%s) > " % default,
+        else:
+            print "> ",
+	choice = sys.stdin.readline()
+        if default and not choice.strip():
+            return default
+	try:
+	    category=int(choice[:-1])
+	except:
+	    print "Could not understand category choice, please try again."
+	    category=0
+    category=categories[category-1]
+
+    return category
 
 def create_disc_info(cd, discId, status, tracktimes):
     """
@@ -365,24 +401,7 @@ def create_disc_info(cd, discId, status, tracktimes):
     track_frames = discId[2:-1]
     num_seconds = discId[-1]
 
-    categories = ['blues', 'classical', 'country', 'data',
-		  'folk', 'jazz', 'misc', 'newage',
-		  'reggae', 'rock', 'soundtrack',]
-    category=0
-    while not category:
-	print "Unrecognized disk.  Please choose category:"
-	for i in range(len(categories)):
-	    print "%2d) %-10s  " % (i+1, categories[i]),
-	    if not (i+1) % 4: print
-	if (i+1) % 4: print
-	print "> ",
-	choice = sys.stdin.readline()
-	try:
-	    category=int(choice[:-1])
-	except:
-	    print "Could not understand category choice, please try again."
-	    category=0
-    category=categories[category-1]
+    category = choose_category()
 
     print "Artist: ",
     artist = sys.stdin.readline()[:-1]
@@ -402,7 +421,7 @@ def create_disc_info(cd, discId, status, tracktimes):
     return (artist, title, category, tracktitles, tracktimes)
 
 
-def choose_disc_info(list, cd, discId, status, tracktimes):
+def choose_disc_info(disclist, cd, discId, status, tracktimes):
     """
     Let user choose from database hits.  Unfortunately, freedb
     sometimes returns a status of multiple entries with a list
@@ -413,8 +432,8 @@ def choose_disc_info(list, cd, discId, status, tracktimes):
       The first element is a discInfo dictionary
       The second is None or a list returned from create_disc_info
     """
-    if len(list) == 1:
-	return (list[0], None)
+    if len(disclist) == 1:
+	return (disclist[0], None)
     # FIXME: send in new update entries for inexact matches?
 
     if interactive: item = 0
@@ -422,8 +441,8 @@ def choose_disc_info(list, cd, discId, status, tracktimes):
 
     while not item:
 	print "Please choose one of the following entries:"
-	for i in range(len(list)):
-	    print "%2d) %10s: %s" % (i+1, list[i]["category"], list[i]["title"])
+	for i in range(len(disclist)):
+	    print "%2d) %10s: %s" % (i+1, disclist[i]["category"], disclist[i]["title"])
 	print "98) Urk, please skip this CD"
 	print "99) None of the above, let me enter the data manually"
 	print "> ",
@@ -433,7 +452,7 @@ def choose_disc_info(list, cd, discId, status, tracktimes):
 		return (None, None)
 	    if item == 99:
 		return (None, create_disc_info(cd, discId, status, tracktimes))
-	    if item-1 not in range(len(list)):
+	    if item-1 not in range(len(disclist)):
 		print "%d not in range, please try again." % item
 		item=0
 	except KeyboardInterrupt:
@@ -442,7 +461,7 @@ def choose_disc_info(list, cd, discId, status, tracktimes):
 	    print "Not a legal integer value, please try again."
 	    item=0
 
-    return (list[item-1], None)
+    return (disclist[item-1], None)
 
 
 def get_disc_info(cd):
@@ -501,7 +520,10 @@ def get_disc_info(cd):
     tracktitles = dict((int(x[6:]), trackInfo[x])
                        for x in trackInfo.keys()
                        if x.startswith('TTITLE'))
-    return (artist, title, discInfo['category'], tracktitles, tracktimes)
+
+    category = choose_category(default=discInfo['category'])
+
+    return (artist, title, category, tracktitles, tracktimes)
 
 
 def do_one_disc():
