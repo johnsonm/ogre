@@ -37,6 +37,13 @@
 
 import DiscID, CDDB, cdrom, sys, os, shutil, time, re, cPickle, tempfile
 
+# Borrow Conary's nice debugging hook if available
+try:
+    from conary.lib import util
+    sys.excepthook = util.genExcepthook(debug=True)
+except:
+    pass
+
 ogre_version = "0.6"
 # do not use the real submit address until this has been well-tested
 #submit_address = "freedb-submit@freedb.org"
@@ -190,13 +197,24 @@ def merge_dicts(dictlist):
 
 
 
-def rip_one_track(track, nameinfo):
-    print "Ripping track %d %s" % (track+1, nameinfo['ttitle'])
+def rip_one_track(track, tracks, nameinfo):
+    print "Ripping track %d/%s %s" % (track+1, tracks, nameinfo['ttitle'])
     start = time.time()
-    os.system("cdparanoia %s -qw %d %s" % (nameinfo['device'],
-                                           track+1, nameinfo['wavname']))
+    es = os.system("cdparanoia %s -qw %d %s" % (nameinfo['device'],
+                                                track+1, nameinfo['wavname']))
     dur = time.time() - start
-    print " Ripped track %d (%s) %s" % (track+1, hms(dur), nameinfo['ttitle'])
+    exit_code = os.WEXITSTATUS(es)
+    if exit_code:
+        if track == tracks and 'data' in nameinfo['ttitle'].lower():
+            print " Skipping apparant data track %d %s" % (track+1,
+                                                           nameinfo['ttitle'])
+            return True
+        else:
+            print " Failed to rip track %d %s" %(track+1, nameinfo['ttitle'])
+            return False
+    print " Ripped track %d/%d (%s) %s" % (track+1, tracks, hms(dur),
+                                           nameinfo['ttitle'])
+    return True
 
 def enc_one_track(track, nameinfo):
     print "Encoding track %d %s" % (track+1, nameinfo['ttitle'])
@@ -588,9 +606,10 @@ def do_one_disc():
 	encfile = names['encfile'] % nameinfos[track]
 	nameinfos[track]['encfile'] = "%s/%s" % (encdir, encfile)
 
-    for track in range(len(tracktitles)):
-        rip_one_track(track, nameinfos[track])
-        dispatch_enc_one_track(track, nameinfos[track])
+    tracks = len(tracktitles)
+    for track in range(tracks):
+        if rip_one_track(track, tracks, nameinfos[track]):
+            dispatch_enc_one_track(track, nameinfos[track])
 
     dispatch_diskend(encdir, oggdir, flacdir, mp3dir)
     eject(rip_device)
