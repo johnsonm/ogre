@@ -1,6 +1,6 @@
 #!/usr/bin/env python
 #
-# Copyright 2001, 2004, 2008 Michael K. Johnson <a1237+ogre@danlj.org>
+# Copyright 2001, 2004, 2008-2011 Michael K. Johnson <a1237+ogre@danlj.org>
 #
 # Ogg-ripping script inspired by autorip, but designed to allow the
 # user the opportunity to enter track information and send the info
@@ -35,7 +35,8 @@
 # A copy of the GNU General Public License can be found in the
 # COPYING file that accompanied this distribution
 
-import DiscID, CDDB, cdrom, sys, os, shutil, time, re, cPickle, tempfile
+import DiscID, CDDB, cdrom
+import sys, os, shutil, time, re, cPickle, tempfile, signal
 
 # Borrow Conary's nice debugging hook if available
 try:
@@ -117,11 +118,11 @@ class rotator:
 
 def make_utf8(name):
     try:
-        return name.decode('iso-8859-1').encode('utf-8')
+        name.decode('utf-8')
+        return name
     except UnicodeDecodeError:
         try:
-            name.decode('utf-8')
-            return name
+            return name.decode('iso-8859-1').encode('utf-8')
         except UnicodeDecodeError:
             return name
 
@@ -205,9 +206,13 @@ def rip_one_track(track, tracks, nameinfo):
     dur = time.time() - start
     exit_code = os.WEXITSTATUS(es)
     if exit_code:
-        if track == tracks and 'data' in nameinfo['ttitle'].lower():
+        if track >= tracks - 1 and 'data' in nameinfo['ttitle'].lower():
             print " Skipping apparant data track %d %s" % (track+1,
                                                            nameinfo['ttitle'])
+            return False
+        elif os.WIFSIGNALED(es) and os.WTERMSIG(es) == signal.SIGHUP:
+            print " Track rip terminated by SIGHUP: %d %s" %(track+1,
+                                                             nameinfo['ttitle'])
             return True
         else:
             print " Failed to rip track %d %s" %(track+1, nameinfo['ttitle'])
@@ -515,11 +520,11 @@ def get_disc_info(cd):
 	return create_disc_info(cd, discId, status, tracktimes)
 
     discTitle = re.split(r"\s+/\s+", discInfo['title'], 1)
-    artist = discTitle[0]
+    artist = make_utf8(discTitle[0])
     if len(discTitle) == 1:
-	title = discTitle[0]
+	title = make_utf8(discTitle[0])
     else:
-	title = discTitle[1]
+	title = make_utf8(discTitle[1])
 
     (status, trackInfo) = CDDB.read(discInfo['category'], discInfo['disc_id'],
 				     client_name="ogre",
@@ -535,7 +540,7 @@ def get_disc_info(cd):
 	print "That's funny, we found it a second ago!"
 	return (None, None, None, None, None, None)
 
-    tracktitles = dict((int(x[6:]), trackInfo[x])
+    tracktitles = dict((int(x[6:]), make_utf8(trackInfo[x]))
                        for x in trackInfo.keys()
                        if x.startswith('TTITLE'))
 
