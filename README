@@ -1,23 +1,19 @@
 README
 
-ogre is an ogg-ripping script inspired by autorip, but designed to
-allow the user the opportunity to enter track information and send the
-info off to freedb for the next user.  I wrote it because I got tired
-of autorip not knowing about my less-well-known discs but was spoiled
+ogre is a CD-ripping (originally ogg-ripping, thus the name)
+script inspired originally by autorip, but designed to allow the
+user the opportunity to enter track information and send the info
+off to freedb for the next user.  I wrote it because I got tired of
+autorip not knowing about my less-well-known discs but was spoiled
 by not having to type very much to rip.
 
-ogre is unapologetically ogg-specific.  Ogg Vorbis sounds better
-than MP3 and is not subject to nasty patents.  Folks with MP3
-players with no ogg capability should use some other ripping
-script, sorry.  It also rips flac, in order to reencode later.
+It is quite a hack written when I had very little python expertise
+and is specific to my systems.  Do not use it as example code.
 
 ogre depends on Ben Gertzfield's cddb-py package; check
 http://sourceforge.net/projects/cddb-py/ for a copy.
 
-ogre is tested with Python 2.4; later versions are likely to
-work but I have not tested them at this point.  Please feel free
-to test it and report results to me.  Bug fixes are also welcome,
-of course.
+ogre is currently used with Python 2.7.
 
 To configure ogre, edit the variables near the top of the file.
   interactive
