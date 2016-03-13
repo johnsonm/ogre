@@ -1,22 +1,6 @@
 #!/usr/bin/env python
 #
-# Copyright 2001, 2004, 2008-2011 Michael K. Johnson <a1237+ogre@danlj.org>
-#
-# Ogg-ripping script inspired by autorip, but designed to allow the
-# user the opportunity to enter track information and send the info
-# off to freedb for the next user.  I wrote it because I got tired
-# of autorip not knowing about my less-well-known discs but was
-# spoiled by not having to type very much to rip.
-#
-# ogre is unapologetically ogg-specific.  Ogg Vorbis sounds better
-# than MP3 and is not subject to nasty patents.  Folks with MP3
-# players with no ogg capability should use some other ripping
-# script, sorry.  It also rips flac.  Oh, I give up.  Rips mp3 as
-# well, since network streaming client support seems to be too
-# sparse on hardware/software/firmware I have.
-#
-# ogre depends on Ben Gertzfield's cddb-py package; check
-# http://sourceforge.net/projects/cddb-py/ for a copy.
+# Copyright 2001-2016 Michael K. Johnson <a1237+ogre@danlj.org>
 #
 # This program is free software; you can redistribute it and/or modify
 # it under the terms of the GNU General Public License as published by
@@ -45,7 +29,7 @@ try:
 except:
     pass
 
-ogre_version = "0.6"
+ogre_version = "0.7"
 # do not use the real submit address until this has been well-tested
 #submit_address = "freedb-submit@freedb.org"
 submit_address = "test-submit@freedb.org"
